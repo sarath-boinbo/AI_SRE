@@ -3,6 +3,8 @@ import json
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 from src.incident_parser import extract_human_chat_text
 from src.postmortem_generator import generate_postmortem
 
@@ -18,21 +20,14 @@ def load_environment_from_dotenv(env_path: Path | None = None) -> None:
     if not env_path.exists():
         return
 
-    for line in env_path.read_text().splitlines():
-        stripped_line = line.strip()
-        if not stripped_line or stripped_line.startswith("#") or "=" not in stripped_line:
-            continue
-
-        key, value = stripped_line.split("=", 1)
-        key = key.strip()
-        value = value.strip().strip('"').strip("'")
-        os.environ.setdefault(key, value)
+    load_dotenv(env_path, override=True)
 
 
 def create_gemini_client():
     from google import genai
 
-    return genai.Client()
+    api_key = os.getenv("GOOGLE_API_KEY")
+    return genai.Client(api_key=api_key, vertexai=False)
 
 
 def parse_args(argv=None):

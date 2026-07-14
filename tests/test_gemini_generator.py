@@ -28,7 +28,7 @@ def test_generate_postmortem_uses_gemini_client_and_returns_text():
 
     assert result == "generated postmortem"
     assert last_call is not None
-    assert last_call["model"] == "gemini-2.0-flash"
+    assert last_call["model"] == "gemini-3.1-flash-lite"
     assert transcript in last_call["contents"]
     assert "customer impact" in last_call["contents"].lower()
     assert "timeline" in last_call["contents"].lower()

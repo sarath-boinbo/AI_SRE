@@ -57,3 +57,32 @@ def test_load_environment_from_dotenv_sets_missing_values(tmp_path, monkeypatch)
     assert Path(env_file).exists()
     assert __import__("os").environ["GOOGLE_API_KEY"] == "test-key"
     assert __import__("os").environ["IGNORED_VALUE"] == "hello world"
+
+
+def test_load_environment_from_dotenv_overrides_existing_values(tmp_path, monkeypatch):
+    env_file = tmp_path / ".env"
+    env_file.write_text("GOOGLE_API_KEY=from-dotenv\n")
+
+    monkeypatch.setenv("GOOGLE_API_KEY", "stale-shell-value")
+
+    main.load_environment_from_dotenv(env_file)
+
+    assert __import__("os").environ["GOOGLE_API_KEY"] == "from-dotenv"
+
+
+def test_create_gemini_client_uses_api_key_and_developer_api(monkeypatch):
+    calls = {}
+
+    class FakeGenAI:
+        def Client(self, **kwargs):
+            calls.update(kwargs)
+            return object()
+
+    monkeypatch.setenv("GOOGLE_API_KEY", "test-key")
+    monkeypatch.setitem(__import__("sys").modules, "google.genai", FakeGenAI())
+
+    client = main.create_gemini_client()
+
+    assert client is not None
+    assert calls["api_key"] == "test-key"
+    assert calls["vertexai"] is False
