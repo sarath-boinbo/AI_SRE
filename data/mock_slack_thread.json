@@ -1,0 +1,51 @@
+{
+  "channel": "#incident-response",
+  "thread_ts": "1720891800.000000",
+  "messages": [
+    {
+      "ts": "1720891800.000000",
+      "user": "U014A1",
+      "text": "Seeing elevated 5xx errors on the checkout API since 14:55 UTC."
+    },
+    {
+      "ts": "1720891860.000000",
+      "user": "U02B7C",
+      "text": "Confirming. Grafana shows error rate jumped from 0.4% to 18% in the last 5 minutes."
+    },
+    {
+      "ts": "1720891920.000000",
+      "bot_id": "B0ALERT1",
+      "text": "PagerDuty incident INC-4832 triggered for checkout-api-high-5xx"
+    },
+    {
+      "ts": "1720891980.000000",
+      "user": "U014A1",
+      "text": "I’m checking recent deploys now. Last release went out at 14:47 UTC."
+    },
+    {
+      "ts": "1720892040.000000",
+      "user": "U033DD",
+      "text": "Found it. The payments-service config change added a timeout that’s too low for the new retry path."
+    },
+    {
+      "ts": "1720892100.000000",
+      "bot_id": "B0BOT2",
+      "text": "Runbook reminder: verify whether autoscaling is saturated before rollback."
+    },
+    {
+      "ts": "1720892160.000000",
+      "user": "U02B7C",
+      "text": "Rolling back the config now and watching the error rate."
+    },
+    {
+      "ts": "1720892280.000000",
+      "user": "U033DD",
+      "text": "Rollback completed. Error rate is down to 0.7% and latency is recovering."
+    },
+    {
+      "ts": "1720892400.000000",
+      "user": "U014A1",
+      "text": "We should capture the customer impact window, detection gap, and why the timeout change escaped review."
+    }
+  ]
+}
