@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 
 from src.incident_parser import extract_human_chat_text
 from src.postmortem_generator import generate_postmortem
+from src.slack_source import fetch_slack_thread
 
 
 def load_slack_thread(path: Path) -> dict:
@@ -34,6 +35,10 @@ def parse_args(argv=None):
     parser = argparse.ArgumentParser()
     default_path = Path(__file__).resolve().parents[1] / "data" / "mock_slack_thread.json"
     parser.add_argument("slack_thread_path", nargs="?", default=str(default_path))
+    parser.add_argument("--source", choices=["file", "slack"], default="file")
+    parser.add_argument("--channel-id")
+    parser.add_argument("--bot-token")
+    parser.add_argument("--limit", type=int, default=50)
     parser.add_argument("--print-transcript", action="store_true")
     return parser.parse_args(argv)
 
@@ -41,7 +46,20 @@ def parse_args(argv=None):
 def main(argv=None) -> None:
     load_environment_from_dotenv()
     args = parse_args(argv)
-    payload = load_slack_thread(Path(args.slack_thread_path))
+
+    if args.source == "slack":
+        channel_id = args.channel_id or os.getenv("SLACK_CHANNEL_ID")
+        bot_token = args.bot_token or os.getenv("SLACK_BOT_TOKEN")
+
+        if not channel_id:
+            raise RuntimeError("SLACK_CHANNEL_ID is required when --source slack is used")
+        if not bot_token:
+            raise RuntimeError("SLACK_BOT_TOKEN is required when --source slack is used")
+
+        payload = fetch_slack_thread(channel_id, bot_token, args.limit)
+    else:
+        payload = load_slack_thread(Path(args.slack_thread_path))
+
     transcript = extract_human_chat_text(payload)
     if args.print_transcript:
         print(transcript)

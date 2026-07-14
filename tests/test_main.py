@@ -86,3 +86,19 @@ def test_create_gemini_client_uses_api_key_and_developer_api(monkeypatch):
     assert client is not None
     assert calls["api_key"] == "test-key"
     assert calls["vertexai"] is False
+
+
+def test_main_can_read_from_slack_source(monkeypatch, capsys):
+    fake_payload = {"messages": [{"ts": "1", "text": "slack transcript"}]}
+
+    monkeypatch.setattr(main, "fetch_slack_thread", lambda channel_id, bot_token, limit: fake_payload)
+    monkeypatch.setattr(main, "extract_human_chat_text", lambda payload: "slack transcript")
+    monkeypatch.setattr(main, "create_gemini_client", lambda: object())
+    monkeypatch.setattr(main, "generate_postmortem", lambda client, transcript: f"postmortem: {transcript}")
+    monkeypatch.setenv("SLACK_CHANNEL_ID", "C123")
+    monkeypatch.setenv("SLACK_BOT_TOKEN", "xoxb-test-token")
+
+    main.main(["--source", "slack"])
+
+    captured = capsys.readouterr()
+    assert captured.out.strip() == "postmortem: slack transcript"
