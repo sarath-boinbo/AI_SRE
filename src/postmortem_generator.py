@@ -1,4 +1,4 @@
-def generate_postmortem(client, transcript, model="gemini-2.0-flash"):
+def generate_postmortem(client, transcript, model="gemini-3.1-flash-lite"):
     prompt = (
         "Write a blameless postmortem from the incident transcript below. "
         "Include customer impact, timeline, contributing factors, detection gaps, "
