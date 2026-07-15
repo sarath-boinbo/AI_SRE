@@ -4,8 +4,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from src.postmortem_generator import generate_postmortem
-from src.slack_source import fetch_slack_thread, post_slack_message
-from src.slack_source import extract_human_chat_text
+from src.slack_source import fetch_slack_thread, post_slack_message, extract_human_chat_text
 
 
 def load_environment_from_dotenv(env_path: Path | None = None) -> None:
