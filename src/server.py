@@ -18,18 +18,23 @@ def process_incident(alert_title: str, status: str):
         print("Missing Slack credentials.")
         return
 
-    if status == "firing":
-        # For now, just post an initial alert message using slack module
-        message = f"🚨 *ALERT FIRING:* {alert_title}\n\nInvestigating..."
+    # Datadog will now send "Triggered" for alerts
+    if status == "Triggered":
+        print(f"Alert {alert_title} firing. Attempting to fetch runbook...")
+        try:
+            with open(f"{alert_title}.md", "r", encoding="utf-8") as f:
+                message = f.read()
+        except FileNotFoundError:
+            message = f"🚨 *ALERT FIRING:* {alert_title}\n\n(Runbook {alert_title}.md not found locally.)"
+            
         post_slack_message(channel_id, bot_token, message)
-        print(f"Initial alert posted for {alert_title}")
+        print(f"Initial runbook posted for {alert_title}")
         
-    elif status == "resolved":
+    # Datadog will now send "Recovered" when the CPU drops
+    elif status == "Recovered":
         print(f"Alert {alert_title} resolved. Generating postmortem...")
         
         payload = fetch_slack_thread(channel_id, bot_token)
-        
-        # Reuse pipeline execution order from main.py
         transcript = extract_human_chat_text(payload)
         
         client = create_gemini_client()
