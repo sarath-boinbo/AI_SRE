@@ -31,7 +31,7 @@ def test_webhook_returns_success_and_triggers_background_task(monkeypatch):
 
     # 4. Assert the background task was correctly queued and executed with the right payload
     assert len(task_calls) == 1
-    assert task_calls[0] == ("Database CPU Spike", "resolved")
+    assert task_calls[0] == ("Database CPU Spike", "Recovered")
 
 def test_webhook_handles_missing_fields_with_defaults(monkeypatch):
     # Setup the spy
@@ -46,4 +46,34 @@ def test_webhook_handles_missing_fields_with_defaults(monkeypatch):
     
     # Assert the server correctly applied the default fallback values
     assert len(task_calls) == 1
-    assert task_calls[0] == ("Unknown Alert", "firing")
+    assert task_calls[0] == ("Unknown Alert", "Triggered")
+
+
+def test_normalize_status_maps_datadog_states():
+    assert src.server.normalize_status("ALERT") == "Triggered"
+    assert src.server.normalize_status("OK") == "Recovered"
+    assert src.server.normalize_status("No Data") == "No Data"
+
+
+def test_normalize_status_maps_datadog_message_payload():
+    assert src.server.normalize_status(
+        "system.cpu.user over *** was <= 80.0 on average during the last 1m**."
+    ) == "Triggered"
+
+
+def test_read_runbook_uses_server_directory(tmp_path, monkeypatch):
+    runbook_dir = tmp_path / "runbooks"
+    runbook_dir.mkdir()
+    runbook = runbook_dir / "CPU_Spike.md"
+    runbook.write_text("runbook contents", encoding="utf-8")
+    monkeypatch.setattr(src.server, "__file__", str(tmp_path / "server.py"))
+
+    assert src.server.read_runbook("CPU_Spike") == "runbook contents"
+
+
+def test_should_process_alert_ignores_duplicate_status(monkeypatch):
+    monkeypatch.setattr(src.server, "_LAST_PROCESSED_STATUS_BY_ALERT", {})
+
+    assert src.server.should_process_alert("CPU_Spike", "Triggered") is True
+    assert src.server.should_process_alert("CPU_Spike", "Triggered") is False
+    assert src.server.should_process_alert("CPU_Spike", "Recovered") is True
