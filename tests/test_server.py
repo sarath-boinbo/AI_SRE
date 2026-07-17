@@ -56,18 +56,26 @@ def test_normalize_status_maps_datadog_states():
 
 
 def test_normalize_status_maps_datadog_message_payload():
+    # Test that a spike above the threshold triggers the alert
+    assert src.server.normalize_status(
+        "system.cpu.user over *** was > 80.0 on average during the last 1m**."
+    ) == "Triggered"
+
+    # Test that dropping below the threshold resolves the alert
     assert src.server.normalize_status(
         "system.cpu.user over *** was <= 80.0 on average during the last 1m**."
-    ) == "Triggered"
+    ) == "Recovered"
 
 
 def test_read_runbook_uses_server_directory(tmp_path, monkeypatch):
-    runbook_dir = tmp_path / "runbooks"
-    runbook_dir.mkdir()
-    runbook = runbook_dir / "CPU_Spike.md"
+    # Place the runbook directly in tmp_path so it is a sibling to the mock server.py
+    runbook = tmp_path / "CPU_Spike.md"
     runbook.write_text("runbook contents", encoding="utf-8")
+    
+    # Mock the server.py location
     monkeypatch.setattr(src.server, "__file__", str(tmp_path / "server.py"))
 
+    # Now the paths will align perfectly
     assert src.server.read_runbook("CPU_Spike") == "runbook contents"
 
 

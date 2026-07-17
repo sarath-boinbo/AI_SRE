@@ -2,15 +2,31 @@
 import os
 from pathlib import Path
 from threading import Lock
+from dotenv import load_dotenv
 from fastapi import FastAPI, Request, BackgroundTasks
 
-from src.main import load_environment_from_dotenv, create_gemini_client
 from src.postmortem_generator import generate_postmortem
 from src.slack_source import fetch_slack_thread, post_slack_message, extract_human_chat_text
 
 app = FastAPI()
 _LAST_PROCESSED_STATUS_BY_ALERT: dict[str, str] = {}
 _STATUS_LOCK = Lock()
+
+def load_environment_from_dotenv(env_path: Path | None = None) -> None:
+    if env_path is None:
+        env_path = Path(__file__).resolve().parents[1] / ".env"
+
+    if not env_path.exists():
+        return
+
+    load_dotenv(env_path, override=True)
+
+
+def create_gemini_client():
+    from google import genai
+
+    api_key = os.getenv("GOOGLE_API_KEY")
+    return genai.Client(api_key=api_key, vertexai=False)
 
 
 def normalize_status(status: str) -> str:
@@ -56,8 +72,6 @@ def process_incident(alert_title: str, status: str):
     if not channel_id or not bot_token:
         print("Missing Slack credentials.")
         return
-
-    status = normalize_status(status)
 
     if not should_process_alert(alert_title, status):
         print(f"Duplicate webhook ignored for {alert_title} at status {status}.")
