@@ -1,5 +1,6 @@
 import datetime
 
+
 def generate_postmortem(client, transcript, model="gemini-3.1-flash-lite"):
     current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     prompt = (

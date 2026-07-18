@@ -2,15 +2,17 @@
 import os
 from pathlib import Path
 from threading import Lock
+
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request, BackgroundTasks
+from fastapi import BackgroundTasks, FastAPI, Request
 
 from postmortem_generator import generate_postmortem
-from slack_source import fetch_slack_thread, post_slack_message, extract_human_chat_text
+from slack_source import extract_human_chat_text, fetch_slack_thread, post_slack_message
 
 app = FastAPI()
 _LAST_PROCESSED_STATUS_BY_ALERT: dict[str, str] = {}
 _STATUS_LOCK = Lock()
+
 
 def load_environment_from_dotenv(env_path: Path | None = None) -> None:
     if env_path is None:
@@ -27,6 +29,7 @@ def create_gemini_client():
 
     api_key = os.getenv("GOOGLE_API_KEY")
     return genai.Client(api_key=api_key, vertexai=False)
+
 
 # Hardcoded normalization for CPU alert statuses
 def normalize_status(status: str) -> str:
@@ -63,6 +66,7 @@ def read_runbook(alert_title: str) -> str:
     except FileNotFoundError:
         return f"🚨 *ALERT FIRING:* {alert_title}\n\n(Runbook {runbook_path.name} not found locally.)"
 
+
 def process_incident(alert_title: str, status: str):
 
     load_environment_from_dotenv()
@@ -84,32 +88,36 @@ def process_incident(alert_title: str, status: str):
 
         post_slack_message(channel_id, bot_token, message)
         print(f"Initial runbook posted for {alert_title}")
-        
+
     # handle_webhook() will now send "Recovered" when the CPU drops
     elif status == "Recovered":
         print(f"Alert {alert_title} resolved. Generating postmortem...")
-        
+
         payload = fetch_slack_thread(channel_id, bot_token)
         transcript = extract_human_chat_text(payload)
-        
+
         client = create_gemini_client()
         postmortem = generate_postmortem(client, transcript)
-        
+
         post_slack_message(channel_id, bot_token, postmortem)
         print("Successfully posted postmortem to Slack!")
+
 
 @app.post("/webhook")
 async def handle_webhook(request: Request, background_tasks: BackgroundTasks):
     payload = await request.json()
-    
+
     alert_title = payload.get("alert_title", "Unknown Alert")
     status = payload.get("status", "firing")
     status = normalize_status(status)
-    
+
     print(f"🚨 INCOMING WEBHOOK: {alert_title} is {status}")
     print(f"Payload: {payload}")
-    
+
     # Hand off the execution to the background task
     background_tasks.add_task(process_incident, alert_title, status)
-    
-    return {"status": "success", "message": "Webhook received, processing in background."}
+
+    return {
+        "status": "success",
+        "message": "Webhook received, processing in background.",
+    }
