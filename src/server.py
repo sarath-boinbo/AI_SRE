@@ -5,8 +5,8 @@ from threading import Lock
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request, BackgroundTasks
 
-from src.postmortem_generator import generate_postmortem
-from src.slack_source import fetch_slack_thread, post_slack_message, extract_human_chat_text
+from postmortem_generator import generate_postmortem
+from slack_source import fetch_slack_thread, post_slack_message, extract_human_chat_text
 
 app = FastAPI()
 _LAST_PROCESSED_STATUS_BY_ALERT: dict[str, str] = {}
@@ -28,7 +28,7 @@ def create_gemini_client():
     api_key = os.getenv("GOOGLE_API_KEY")
     return genai.Client(api_key=api_key, vertexai=False)
 
-
+# Hardcoded normalization for CPU alert statuses
 def normalize_status(status: str) -> str:
     normalized = status.strip().lower()
     if normalized in {"alert", "warning", "warn", "critical", "triggered", "firing"}:
@@ -64,7 +64,7 @@ def read_runbook(alert_title: str) -> str:
         return f"🚨 *ALERT FIRING:* {alert_title}\n\n(Runbook {runbook_path.name} not found locally.)"
 
 def process_incident(alert_title: str, status: str):
-    """This runs in the background using your existing Phase 1 & 2 logic."""
+
     load_environment_from_dotenv()
     channel_id = os.getenv("SLACK_CHANNEL_ID")
     bot_token = os.getenv("SLACK_BOT_TOKEN")
@@ -77,7 +77,7 @@ def process_incident(alert_title: str, status: str):
         print(f"Duplicate webhook ignored for {alert_title} at status {status}.")
         return
 
-    # Datadog will now send "Triggered" for alerts
+    # handle_webhook() will now send "Triggered" for alerts
     if status == "Triggered":
         print(f"Alert {alert_title} firing. Attempting to fetch runbook...")
         message = read_runbook(alert_title)
@@ -85,7 +85,7 @@ def process_incident(alert_title: str, status: str):
         post_slack_message(channel_id, bot_token, message)
         print(f"Initial runbook posted for {alert_title}")
         
-    # Datadog will now send "Recovered" when the CPU drops
+    # handle_webhook() will now send "Recovered" when the CPU drops
     elif status == "Recovered":
         print(f"Alert {alert_title} resolved. Generating postmortem...")
         
