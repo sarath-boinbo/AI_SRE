@@ -3,6 +3,11 @@
 An automated, cloud-native Site Reliability Engineering (SRE) pipeline that bridges production infrastructure monitoring with generative AI. Built with **FastAPI**, **Docker**, and **Python**, this system minimizes mean time to resolution (MTTR) by acting as an automated on-call engineer during critical service incidents.
 
 ---
+## Overview/Demo
+
+https://github.com/user-attachments/assets/f9d9e263-986c-4968-94ff-aba2faff4d90
+
+___
 
 ## Cloud & Pipeline Architecture
 
