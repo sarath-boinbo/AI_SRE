@@ -5,7 +5,7 @@ An automated, cloud-native Site Reliability Engineering (SRE) pipeline that brid
 ---
 ## Overview/Demo
 
-https://github.com/user-attachments/assets/f9d9e263-986c-4968-94ff-aba2faff4d90
+https://github.com/user-attachments/assets/d526f70e-63fb-46da-bd6f-ea7b45110af3
 
 ___
 
